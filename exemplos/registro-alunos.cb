@@ -1,0 +1,95 @@
+programa RegistroAlunos
+
+const MAX_ALUNOS: int = 3
+const QTD_NOTAS: int = 3
+
+// Registro: reúne campos de diferentes tipos
+registro Aluno
+	id: int
+	nome: cadeia
+	notas: vetor[QTD_NOTAS] de real
+	media: real
+fim
+
+// Dado global: pode ser acessado pelos módulos e pelo bloco principal
+var totalOperacoes: int = 0
+
+// Com retorno. Ambos os parâmetros são passados por valor. O vetor inteiro é copiado nesta chamada
+
+modulo calcularMedia(notas: vetor[QTD_NOTAS] de real, qtd: int): real
+	var soma: real = 0.0
+	var i: int
+
+	para i de 0 ate qtd - 1 faca
+		soma = soma + notas[i]
+	fimpara
+
+	totalOperacoes++
+	retorna soma / qtd
+fim
+
+// Sem retorno. A referência permite modificar o aluno original
+
+modulo atualizarMedia(ref aluno: Aluno): vazio
+	aluno.media = calcularMedia(aluno.notas, QTD_NOTAS)
+	totalOperacoes++
+fim
+
+// Sem retorno. Recebe uma cópia completa do registro.
+
+modulo exibirAluno(aluno: Aluno): vazio
+	var i: int
+
+	escreve("\nID: ", aluno.id, " | Nome: ", aluno.nome, "\n")
+	escreve("Notas: ")
+	para i de 0 ate QTD_NOTAS - 1 faca
+		escreve(aluno.notas[i], " ")
+	fimpara
+	escreve("\nMédia: ", aluno.media, "\n")
+
+	totalOperacoes++
+fim
+
+inicio
+	// Dados locais ao bloco principal
+	var i: int
+	var turma: vetor[MAX_ALUNOS] de Aluno
+
+	/* Inicialização por campos:
+	   Colombe não possui literais de estruturas */
+	turma[0].id = 101
+	turma[0].nome = "Ana Banana"
+	turma[0].notas[0] = 8.5
+	turma[0].notas[1] = 7.0
+	turma[0].notas[2] = 9.0
+	turma[0].media = 0.0
+
+	turma[1].id = 102
+	turma[1].nome = "Bruno Lima"
+	turma[1].notas[0] = 6.0
+	turma[1].notas[1] = 5.5
+	turma[1].notas[2] = 7.0
+	turma[1].media = 0.0
+
+	turma[2].id = 103
+	turma[2].nome = "Carla Souza"
+	turma[2].notas[0] = 9.5
+	turma[2].notas[1] = 9.0
+	turma[2].notas[2] = 10.0
+	turma[2].media = 0.0
+
+	escreve("=== REGISTRO E PROCESSAMENTO DE ALUNOS ===\n")
+
+	// O parâmetro ref está na declaração; a chamada não exige &.
+	para i de 0 ate MAX_ALUNOS - 1 faca
+		atualizarMedia(turma[i])
+	fimpara
+
+	// Passagem por valor: cada chamada copia um registro da turma.
+	para i de 0 ate MAX_ALUNOS - 1 faca
+		exibirAluno(turma[i])
+	fimpara
+
+	escreve("\n================================================\n")
+	escreve("Total de operações executadas no sistema (Global): ", totalOperacoes, "\n")
+fim

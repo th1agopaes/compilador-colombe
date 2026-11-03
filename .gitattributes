@@ -1,0 +1,13 @@
+# Normaliza finais de linha no repositório (LF), seja o commit feito
+# no Windows (CRLF) ou no Linux (LF). Evita diffs "fantasmas".
+* text=auto
+
+*.java text diff=java
+*.cb   text eol=lf
+*.md   text
+*.xml  text
+*.yml  text eol=lf
+*.sh   text eol=lf
+
+*.jar  binary
+*.pdf  binary

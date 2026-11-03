@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>ec.comp</groupId>
+  <artifactId>compilador-colombe</artifactId>
+  <!-- Versionamento semântico (MAJOR.MINOR.PATCH). 0.x = ainda em construção.
+       0.1.0 = entrega do analisador léxico (tag v0.1.0 no Git) -->
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <name>compilador-colombe</name>
+  <description>Compilador da linguagem Colombe (.cb) - Compiladores, IFMT. Fase 1: analisador léxico.</description>
+  <url>https://github.com/th1agopaes/compilador-colombe</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- "release" garante que o código só use a API do Java 17:
+         compila e roda no Java 17, 21 ou 25 -->
+    <maven.compiler.release>17</maven.compiler.release>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Nome fixo do jar: target/colombe.jar (não muda a cada versão) -->
+    <finalName>colombe</finalName>
+
+    <pluginManagement><!-- fixa as versões dos plugins: build reprodutível em qualquer máquina -->
+      <plugins>
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>3.4.0</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+          <configuration>
+            <compilerArgs>
+              <arg>-Xlint:all</arg> <!-- mostra todos os avisos do compilador -->
+            </compilerArgs>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.2.5</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.1</version>
+          <!-- Configuração pedida pelo professor: informa ao Maven
+               qual é a classe principal (a que tem o main) do .jar -->
+          <configuration>
+            <archive>
+              <manifest>
+                <mainClass>ec.comp.App</mainClass>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>3.1.2</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

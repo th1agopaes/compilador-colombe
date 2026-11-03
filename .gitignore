@@ -1,0 +1,23 @@
+# ---- Maven: tudo que é gerado pelo build ----
+target/
+
+# ---- IDEs ----
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+# VS Code: versiona só as configurações do projeto
+.vscode/*
+!.vscode/settings.json
+
+# ---- Sistema operacional ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Outros ----
+*.log
+# zip de entrega (gerado com git archive, não versionar)
+*.zip

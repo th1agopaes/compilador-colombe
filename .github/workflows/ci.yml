@@ -1,0 +1,43 @@
+# Integração Contínua (CI): a cada push ou pull request, o GitHub
+# compila o projeto e roda os testes em uma máquina limpa.
+# Se algo quebrar, o selo "build" do README fica vermelho.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [17, 21]   # o pom exige Java 17+; testa no mínimo e no LTS atual
+    name: Java ${{ matrix.java }}
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      - name: Compilar, testar e empacotar
+        run: mvn -B verify
+
+      - name: Rodar o léxico no programa exemplo
+        run: java -jar target/colombe.jar exemplos/registro-alunos.cb
+
+      - name: Guardar o jar gerado
+        if: matrix.java == 21
+        uses: actions/upload-artifact@v4
+        with:
+          name: colombe-jar
+          path: target/colombe.jar

@@ -53,7 +53,7 @@ código de barras.
 
 ## Como executar
 
-**Requisitos:** JDK 17 ou superior e Maven 3.6.3 ou superior.
+**Requisitos:** JDK 17 ou superior. O Maven vem pelo wrapper (`./mvnw`); no Windows, use `mvnw.cmd`.
 
 ```bash
 # 1. Compilar, rodar os testes e gerar target/colombe.jar

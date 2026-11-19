@@ -8,6 +8,8 @@
 *.xml  text
 *.yml  text eol=lf
 *.sh   text eol=lf
+mvnw   text eol=lf
+*.cmd  text eol=crlf
 
 *.jar  binary
 *.pdf  binary

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [17, 21]   # o pom exige Java 17+; testa no mínimo e no LTS atual
+        java: [17, 25]   # o pom exige Java 17+; testa no mínimo e no LTS atual
     name: Java ${{ matrix.java }}
 
     steps:
@@ -30,13 +30,13 @@ jobs:
           cache: maven
 
       - name: Compilar, testar e empacotar
-        run: mvn -B verify
+        run: ./mvnw -B verify
 
       - name: Rodar o léxico no programa exemplo
         run: java -jar target/colombe.jar exemplos/registro-alunos.cb
 
       - name: Guardar o jar gerado
-        if: matrix.java == 21
+        if: matrix.java == 25
         uses: actions/upload-artifact@v4
         with:
           name: colombe-jar

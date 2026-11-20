@@ -24,7 +24,7 @@ import ec.comp.model.Token;
 public class AnalisadorSintatico {
 
     private static final String[] TIPOS_PRIMITIVOS = {"int", "real", "logico", "caractere", "cadeia"};
-    /** Palavras reservadas que podem começar um comanndo (parte do FIRST(comando)) */
+    /** Palavras reservadas que podem começar um comando (parte do FIRST(comando)) */
     private static final String[] PALAVRAS_DE_COMANDO = {"se", "enquanto", "repita", "para", "leia", "escreve", "retorna"};
     private final List<Token> tokens;
     private int pos = 0;
@@ -202,7 +202,7 @@ public class AnalisadorSintatico {
         }
     }
 
-        /** tipo_retorno = tipo | "vazio" ; */
+    /** tipo_retorno = tipo | "vazio" ; */
     private void parseTipoRetorno() {
         if (verificar(TipoToken.PALAVRA_RESERVADA, "vazio")) {
             avancar();
@@ -293,7 +293,7 @@ public class AnalisadorSintatico {
         consumir(TipoToken.NL);     // todo comando termina na quebra de linha
     }
 
-        /**
+    /**
      * comando_identificador = identificador ,
      *       ( "(" , [ lista_argumentos ] , ")"
      *       | { seletor } , ( "=" , expressao | "++" | "--" ) ) ;
@@ -343,7 +343,7 @@ public class AnalisadorSintatico {
         parseExpressao();
     }
 
-        /** comando_se = "se" , expressao , "entao" , NL , { comando } , [ "senao" , NL , { comando } ] , "fimse" ; */
+    /** comando_se = "se" , expressao , "entao" , NL , { comando } , [ "senao" , NL , { comando } ] , "fimse" ; */
     private void parseComandoSe() {
         consumir(TipoToken.PALAVRA_RESERVADA, "se");
         parseExpressao();
@@ -368,7 +368,7 @@ public class AnalisadorSintatico {
         consumir(TipoToken.PALAVRA_RESERVADA, "fimenquanto");
     }
 
-        /** comando_repita = "repita" , NL , { comando } , "ate" , expressao ; */
+    /** comando_repita = "repita" , NL , { comando } , "ate" , expressao ; */
     private void parseComandoRepita() {
         consumir(TipoToken.PALAVRA_RESERVADA, "repita");
         consumir(TipoToken.NL);

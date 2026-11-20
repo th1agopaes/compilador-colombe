@@ -288,7 +288,7 @@ public class AnalisadorSintaticoTest {
         assertEquals("esperado '=', '++' ou '--', encontrado '=='", e.getMessage());
     }
 
-        @Test
+    @Test
     public void aceitaComandosEstruturadosAninhados() {
         analisar(comLocais(
                 "se x > 0 entao\n"

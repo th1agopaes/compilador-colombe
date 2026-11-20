@@ -23,6 +23,7 @@ import ec.comp.model.Token;
  */
 public class AnalisadorSintatico {
 
+    private static final String[] TIPOS_PRIMITIVOS = {"int", "real", "logico", "caractere", "cadeia"};
     private final List<Token> tokens;
     private int pos = 0;
 
@@ -57,14 +58,162 @@ public class AnalisadorSintatico {
         consumir(TipoToken.FIM);                // nada depois do "fim"
     }
 
-    /** { declaracao_global } */
+    /**
+     * { declaracao_global }
+     * Repete enquanto o token atual puder COMEÇAR uma declaração global.
+     */
     private void parseDeclaracoesGlobais() {
-        // TODO módulo 2: const, var, registro e modulo
+        // TODO: incluir "modulo" quando a regra declaracao_modulo existir
+        while (verificar(TipoToken.PALAVRA_RESERVADA, "const", "var", "registro")) {
+            parseDeclaracaoGlobal();
+        }
+    }
+
+    /** declaracao_global = declaracao_constante | declaracao_variavel | declaracao_registro | ... ; */
+    private void parseDeclaracaoGlobal() {
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "const")) {
+            parseDeclaracaoConstante();
+        } else if (verificar(TipoToken.PALAVRA_RESERVADA, "var")) {
+            parseDeclaracaoVariavel();
+        } else {
+            parseDeclaracaoRegistro();
+        }
     }
 
     /** bloco = { declaracao_variavel } , { comando } ; */
     private void parseBloco() {
-        // TODO módulos 2 a 4: variáveis locais e comandos
+        while (verificar(TipoToken.PALAVRA_RESERVADA, "var")) {
+            parseDeclaracaoVariavel();
+        }
+        // TODO: { comando }
+    }
+
+    // ---------- declarações de dados ----------
+
+    /** declaracao_constante = "const" , identificador , ":" , tipo_primitivo , "=" , expressao , NL ; */
+    private void parseDeclaracaoConstante() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "const");
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.DELIMITADOR, ":");
+        parseTipoPrimitivo();
+        consumir(TipoToken.OPERADOR, "=");
+        parseExpressao();
+        consumir(TipoToken.NL);
+    }
+
+    /** declaracao_variavel = "var" , identificador , ":" , tipo , [ "=" , expressao ] , NL ; */
+    private void parseDeclaracaoVariavel() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "var");
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.DELIMITADOR, ":");
+        parseTipo();
+        if (verificar(TipoToken.OPERADOR, "=")) {   // [ "=" , expressao ]
+            consumir(TipoToken.OPERADOR, "=");
+            parseExpressao();
+        }
+        consumir(TipoToken.NL);
+    }
+
+    /** declaracao_registro = "registro" , identificador , NL , campo , { campo } , "fim" , NL ; */
+    private void parseDeclaracaoRegistro() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "registro");
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.NL);
+        parseCampo();                               // campo   (pelo menos um)
+        while (verificar(TipoToken.IDENTIFICADOR)) {
+            parseCampo();                           // { campo }
+        }
+        consumir(TipoToken.PALAVRA_RESERVADA, "fim");
+        consumir(TipoToken.NL);
+    }
+
+    /** campo = identificador , ":" , tipo , NL ; */
+    private void parseCampo() {
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.DELIMITADOR, ":");
+        parseTipo();
+        consumir(TipoToken.NL);
+    }
+
+    // ---------- tipos ----------
+
+    /** tipo = tipo_base | tipo_vetor | tipo_matriz ; */
+    private void parseTipo() {
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "vetor")) {
+            parseTipoVetor();
+        } else if (verificar(TipoToken.PALAVRA_RESERVADA, "matriz")) {
+            parseTipoMatriz();
+        } else {
+            parseTipoBase();
+        }
+    }
+
+    /** tipo_base = tipo_primitivo | identificador ; (identificador = nome de registro) */
+    private void parseTipoBase() {
+        if (verificar(TipoToken.PALAVRA_RESERVADA, TIPOS_PRIMITIVOS)) {
+            avancar();
+        } else if (verificar(TipoToken.IDENTIFICADOR)) {
+            avancar();
+        } else {
+            throw erro("um tipo (primitivo ou nome de registro)");
+        }
+    }
+
+    /** tipo_primitivo = "int" | "real" | "logico" | "caractere" | "cadeia" ; */
+    private void parseTipoPrimitivo() {
+        if (!verificar(TipoToken.PALAVRA_RESERVADA, TIPOS_PRIMITIVOS)) {
+            throw erro("um tipo primitivo");
+        }
+        avancar();
+    }
+
+    /** tipo_vetor = "vetor" , "[" , tamanho , "]" , "de" , tipo_base ; */
+    private void parseTipoVetor() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "vetor");
+        consumir(TipoToken.DELIMITADOR, "[");
+        parseTamanho();
+        consumir(TipoToken.DELIMITADOR, "]");
+        consumir(TipoToken.PALAVRA_RESERVADA, "de");
+        parseTipoBase();
+    }
+
+    /** tipo_matriz = "matriz" , "[" , tamanho , "]" , "[" , tamanho , "]" , "de" , tipo_base ; */
+    private void parseTipoMatriz() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "matriz");
+        consumir(TipoToken.DELIMITADOR, "[");
+        parseTamanho();
+        consumir(TipoToken.DELIMITADOR, "]");
+        consumir(TipoToken.DELIMITADOR, "[");
+        parseTamanho();
+        consumir(TipoToken.DELIMITADOR, "]");
+        consumir(TipoToken.PALAVRA_RESERVADA, "de");
+        parseTipoBase();
+    }
+
+    /** tamanho = literal_inteiro | identificador ; (identificador = constante inteira) */
+    private void parseTamanho() {
+        if (verificar(TipoToken.LITERAL_INTEIRO) || verificar(TipoToken.IDENTIFICADOR)) {
+            avancar();
+        } else {
+            throw erro("um tamanho (inteiro ou constante)");
+        }
+    }
+
+    // ---------- expressões ----------
+
+    /**
+     * PROVISÓRIA: aceita só um valor simples (literal ou identificador).
+     * TODO: trocar pela gramática completa de expressões (8 níveis de precedência).
+     */
+    private void parseExpressao() {
+        if (verificar(TipoToken.LITERAL_INTEIRO) || verificar(TipoToken.LITERAL_REAL)
+                || verificar(TipoToken.LITERAL_CARACTERE) || verificar(TipoToken.LITERAL_CADEIA)
+                || verificar(TipoToken.PALAVRA_RESERVADA, "verdadeiro", "falso")
+                || verificar(TipoToken.IDENTIFICADOR)) {
+            avancar();
+        } else {
+            throw erro("uma expressão");
+        }
     }
 
     // =====================================================================
@@ -84,9 +233,17 @@ public class AnalisadorSintatico {
         return tokenAtual().getTipoToken() == tipo;
     }
 
-    /** O token atual é deste tipo E tem este lexema? Só olha, não avança. */
-    private boolean verificar(TipoToken tipo, String lexema) {
-        return verificar(tipo) && tokenAtual().getToken().equals(lexema);
+    /** O token atual é deste tipo E tem UM destes lexemas? Só olha, não avança. */
+    private boolean verificar(TipoToken tipo, String... lexemas) {
+        if (!verificar(tipo)) {
+            return false;
+        }
+        for (String lexema : lexemas) {
+            if (tokenAtual().getToken().equals(lexema)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Exige um token deste tipo: se for, avança e o devolve; se não, erro. */

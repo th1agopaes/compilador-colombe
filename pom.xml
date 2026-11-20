@@ -7,7 +7,7 @@
   <artifactId>compilador-colombe</artifactId>
   <!-- Versionamento semântico (MAJOR.MINOR.PATCH). 0.x = ainda em construção.
        0.1.0 = entrega do analisador léxico (tag v0.1.0 no Git) -->
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <packaging>jar</packaging>
 
   <name>compilador-colombe</name>

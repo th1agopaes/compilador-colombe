@@ -22,9 +22,9 @@ fim
 | Fase | Status | Versão |
 |---|---|---|
 | Especificação formal (EBNF) | ✅ concluída | — |
-| **Analisador léxico** | ✅ concluído | `v0.1.0` |
-| Analisador sintático | ⏳ próxima etapa | — |
-| Analisador semântico | ⏳ | — |
+| Analisador léxico | ✅ concluído | `v0.1.0` |
+| **Analisador sintático** | ✅ concluído | `v0.2.0` |
+| Analisador semântico | ⏳ próxima etapa | — |
 | Geração de código | ⏳ | — |
 
 ## Analisador léxico
@@ -57,7 +57,7 @@ código de barras.
 
 ```bash
 # 1. Compilar, rodar os testes e gerar target/colombe.jar
-mvn package
+./mvnw package
 
 # 2. Analisar um arquivo informado na linha de comando
 java -jar target/colombe.jar exemplos/registro-alunos.cb
@@ -66,7 +66,7 @@ java -jar target/colombe.jar exemplos/registro-alunos.cb
 java -jar target/colombe.jar
 ```
 
-Código de saída: `0` sem erros, `1` com erros léxicos, `2` erro de uso ou de arquivo.
+Código de saída: `0` sem erros, `1` com erros léxicos, `2` erro de uso ou de arquivo, `3` erro sintático.
 
 ### Exemplo de saída
 
@@ -87,8 +87,9 @@ Código de saída: `0` sem erros, `1` com erros léxicos, `2` erro de uso ou de 
    PALAVRA_RESERVADA     70
    IDENTIFICADOR        102
    ...
---------------------------------------------------------------
+ --------------------------------------------------------------
  Análise léxica concluída sem erros.
+ Análise sintática concluída sem erros.
 ```
 
 Com erros (`exemplos/erros-lexicos.cb`):
@@ -101,6 +102,31 @@ Com erros (`exemplos/erros-lexicos.cb`):
    ...
 ```
 
+## Analisador sintático
+
+Se o léxico separa as palavras, o sintático confere se elas formam frases bem construídas,
+como um corretor gramatical. Ele recebe a lista de tokens e verifica se o programa segue
+a gramática da Colombe.
+
+- Técnica **descendente recursiva preditiva (LL(1))**: cada regra da EBNF vira um método
+  `parseXxx()`, e um único token à frente basta para decidir o caminho, sem voltar atrás.
+- **Precedência e associatividade vêm da própria gramática**: um método por nível (8 níveis),
+  `^` associa à direita e relacionais não se encadeiam (`a < b < c` é erro).
+- **Para no primeiro erro**, dizendo o que era esperado, com linha e coluna.
+- Só roda se o léxico terminou sem erros, para não gerar erros em cascata.
+
+```
+ Análise léxica concluída sem erros.
+ Análise sintática concluída sem erros.
+```
+
+Com erro (`exemplos/erro-sintatico.cb`, um `se` sem `fimse`):
+
+```
+ Análise léxica concluída sem erros.
+ Erro sintático [linha 7, coluna 1]: esperado 'fimse', encontrado 'fim'
+```
+
 ## Programas de exemplo
 
 | Arquivo | Conteúdo |
@@ -108,19 +134,22 @@ Com erros (`exemplos/erros-lexicos.cb`):
 | [`registro-alunos.cb`](exemplos/registro-alunos.cb) | programa exemplo da linguagem: registros, vetor de registros, módulos com parâmetro por valor e por referência |
 | [`todos-os-tokens.cb`](exemplos/todos-os-tokens.cb) | usa todas as categorias de token (sem erros) |
 | [`erros-lexicos.cb`](exemplos/erros-lexicos.cb) | um erro léxico proposital por linha |
+| [`erro-sintatico.cb`](exemplos/erro-sintatico.cb) | um `se` sem `fimse` (erro sintático proposital) |
 
 ## Estrutura do projeto
 
 ```
 src/main/java/ec/comp/
-├── App.java                      # linha de comando: lê o arquivo e imprime os tokens
+├── App.java                      # linha de comando: léxico -> sintático
 ├── analisador/
 │   ├── AnalisadorLexico.java     # o scanner: nextToken()
+│   ├── AnalisadorSintatico.java  # o parser: um método parseXxx() por regra da EBNF
 │   └── PalavrasReservadas.java   # as 40 palavras reservadas (Set, busca O(1))
 ├── model/
 │   ├── TipoToken.java            # categorias de token
 │   ├── Token.java                # tipo + lexema + linha + coluna (imutável)
-│   └── ErroLexico.java           # mensagem + linha + coluna
+│   ├── ErroLexico.java           # mensagem + linha + coluna
+│   └── ErroSintatico.java        # exceção: mensagem + linha + coluna
 └── util/AlphaNumericoUtil.java   # classificação de caracteres
 src/test/java/ec/comp/            # testes JUnit (unitários + exemplos + linha de comando)
 exemplos/                         # programas .cb
@@ -130,11 +159,12 @@ docs/                             # especificação léxica (EBNF)
 ## Testes
 
 ```bash
-mvn test
+./mvnw test
 ```
 
-São 30 testes, que cobrem maior casamento, escapes, `\r\n`, posição dos tokens,
-recuperação de erros, os três programas de exemplo e a linha de comando.
+São 74 testes, que cobrem o léxico (maior casamento, escapes, `\r\n`, recuperação de erros),
+o sintático (declarações, tipos, os 8 níveis de precedência, comandos, módulos e mensagens
+de erro com linha e coluna), os programas de exemplo e a linha de comando.
 O [GitHub Actions](.github/workflows/ci.yml) roda todos a cada push, no Java 17 e no 21.
 
 ## Autor

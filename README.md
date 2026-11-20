@@ -165,7 +165,7 @@ docs/                             # especificação léxica (EBNF)
 São 74 testes, que cobrem o léxico (maior casamento, escapes, `\r\n`, recuperação de erros),
 o sintático (declarações, tipos, os 8 níveis de precedência, comandos, módulos e mensagens
 de erro com linha e coluna), os programas de exemplo e a linha de comando.
-O [GitHub Actions](.github/workflows/ci.yml) roda todos a cada push, no Java 17 e no 21.
+O [GitHub Actions](.github/workflows/ci.yml) roda todos a cada push, no Java 17 e no 25.
 
 ## Autor
 

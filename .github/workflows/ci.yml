@@ -32,7 +32,7 @@ jobs:
       - name: Compilar, testar e empacotar
         run: ./mvnw -B verify
 
-      - name: Rodar o léxico no programa exemplo
+      - name: Rodar o compilador no programa exemplo
         run: java -jar target/colombe.jar exemplos/registro-alunos.cb
 
       - name: Guardar o jar gerado

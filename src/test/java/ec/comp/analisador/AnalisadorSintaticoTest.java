@@ -287,4 +287,43 @@ public class AnalisadorSintaticoTest {
         ErroSintatico e = erro(comLocais("x == 1\n"));
         assertEquals("esperado '=', '++' ou '--', encontrado '=='", e.getMessage());
     }
+
+        @Test
+    public void aceitaComandosEstruturadosAninhados() {
+        analisar(comLocais(
+                "se x > 0 entao\n"
+                + "  escreve(\"positivo\")\n"
+                + "senao\n"
+                + "  enquanto x < 0 faca\n"
+                + "    x++\n"
+                + "  fimenquanto\n"
+                + "fimse\n"
+                + "repita\n"
+                + "  x = x - 1\n"
+                + "ate x == 0\n"
+                + "para i de 0 ate 10 passo 2 faca\n"
+                + "  se i mod 4 == 0 entao\n"
+                + "  fimse\n"
+                + "fimpara\n"));
+    }
+
+    @Test
+    public void rejeitaSeSemFimse() {
+        ErroSintatico e = erro(comLocais("se x entao\n  x = 1\n"));
+        assertEquals("esperado 'fimse', encontrado 'fim'", e.getMessage());
+        assertEquals(5, e.getLinha());
+    }
+
+    @Test
+    public void rejeitaParaSemFaca() {
+        ErroSintatico e = erro(comLocais("para i de 0 ate 10\nfimpara\n"));
+        assertEquals("esperado 'faca', encontrado fim de linha", e.getMessage());
+        assertEquals(3, e.getLinha());
+    }
+
+    @Test
+    public void rejeitaVarDepoisDeComando() {
+        ErroSintatico e = erro(comLocais("x = 1\nvar y: int\n"));
+        assertEquals("esperado 'fim', encontrado 'var'", e.getMessage());
+    }
 }

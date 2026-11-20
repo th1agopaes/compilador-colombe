@@ -232,7 +232,10 @@ public class AnalisadorSintatico {
                 case "leia" -> parseComandoLeia();
                 case "escreve" -> parseComandoEscreve();
                 case "retorna" -> parseComandoRetorna();
-                // TODO: se, enquanto, repita, para
+                case "se" -> parseComandoSe();
+                case "enquanto" -> parseComandoEnquanto();
+                case "repita" -> parseComandoRepita();
+                case "para" -> parseComandoPara();
                 default -> throw erro("um comando");
             }
         }
@@ -287,6 +290,61 @@ public class AnalisadorSintatico {
     private void parseComandoRetorna() {
         consumir(TipoToken.PALAVRA_RESERVADA, "retorna");
         parseExpressao();
+    }
+
+        /** comando_se = "se" , expressao , "entao" , NL , { comando } , [ "senao" , NL , { comando } ] , "fimse" ; */
+    private void parseComandoSe() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "se");
+        parseExpressao();
+        consumir(TipoToken.PALAVRA_RESERVADA, "entao");
+        consumir(TipoToken.NL);
+        parseComandos();
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "senao")) {   // [ senao ... ]
+            avancar();
+            consumir(TipoToken.NL);
+            parseComandos();
+        }
+        consumir(TipoToken.PALAVRA_RESERVADA, "fimse");
+    }
+
+    /** comando_enquanto = "enquanto" , expressao , "faca" , NL , { comando } , "fimenquanto" ; */
+    private void parseComandoEnquanto() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "enquanto");
+        parseExpressao();
+        consumir(TipoToken.PALAVRA_RESERVADA, "faca");
+        consumir(TipoToken.NL);
+        parseComandos();
+        consumir(TipoToken.PALAVRA_RESERVADA, "fimenquanto");
+    }
+
+        /** comando_repita = "repita" , NL , { comando } , "ate" , expressao ; */
+    private void parseComandoRepita() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "repita");
+        consumir(TipoToken.NL);
+        parseComandos();
+        consumir(TipoToken.PALAVRA_RESERVADA, "ate");
+        parseExpressao();
+    }
+
+    /**
+     * comando_para = "para" , identificador , "de" , expressao , "ate" , expressao ,
+     *                [ "passo" , expressao ] , "faca" , NL , { comando } , "fimpara" ;
+     */
+    private void parseComandoPara() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "para");
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.PALAVRA_RESERVADA, "de");
+        parseExpressao();
+        consumir(TipoToken.PALAVRA_RESERVADA, "ate");
+        parseExpressao();
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "passo")) {   // [ passo ... ]
+            avancar();
+            parseExpressao();
+        }
+        consumir(TipoToken.PALAVRA_RESERVADA, "faca");
+        consumir(TipoToken.NL);
+        parseComandos();
+        consumir(TipoToken.PALAVRA_RESERVADA, "fimpara");
     }
 
     // ---------- variáveis e chamadas ----------

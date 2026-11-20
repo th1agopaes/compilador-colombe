@@ -47,6 +47,13 @@ public class AppTest {
     public void arquivoPelaLinhaDeComandoSemErros() {
         assertEquals(App.SAIDA_OK, executar("", "exemplos/registro-alunos.cb"));
         assertTrue(out().contains("Análise léxica concluída sem erros."));
+        assertTrue(out().contains("Análise sintática concluída sem erros."));
+    }
+
+    @Test
+    public void arquivoComErroSintaticoRetorna3() {
+        assertEquals(App.SAIDA_ERRO_SINTATICO, executar("", "exemplos/erro-sintatico.cb"));
+        assertTrue(out().contains("Erro sintático [linha 7, coluna 1]: esperado 'fimse', encontrado 'fim'"));
     }
 
     @Test

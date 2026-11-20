@@ -14,9 +14,12 @@ import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.List;
 
 import ec.comp.analisador.AnalisadorLexico;
+import ec.comp.analisador.AnalisadorSintatico;
 import ec.comp.model.ErroLexico;
+import ec.comp.model.ErroSintatico;
 import ec.comp.model.TipoToken;
 import ec.comp.model.Token;
 
@@ -28,13 +31,14 @@ import ec.comp.model.Token;
  *   2. Sem argumento:      java -jar colombe.jar
  *                          -> o programa pergunta o nome do arquivo.
  *
- * Código de saída: 0 = sem erros léxicos | 1 = com erros léxicos | 2 = erro de uso/arquivo.
- */
+ * Código de saída: 0 = sem erros | 1 = erros léxicos | 2 = erro de uso/arquivo | 3 = erro sintático.
+ **/
 public final class App {
 
     static final int SAIDA_OK = 0;
     static final int SAIDA_ERRO_LEXICO = 1;
     static final int SAIDA_ERRO_USO = 2;
+    static final int SAIDA_ERRO_SINTATICO = 3;
 
     // Para onde o programa escreve. No main são o console; nos testes,
     // são trocados por buffers em memória para conferir a saída.
@@ -79,11 +83,16 @@ public final class App {
             return SAIDA_ERRO_USO;
         }
 
-        return analisar(arquivo, codigo) ? SAIDA_OK : SAIDA_ERRO_LEXICO;
+        List<Token> tokens = analisarLexico(arquivo, codigo);
+        if (tokens == null) {
+            return SAIDA_ERRO_LEXICO;
+        }
+        return analisarSintatico(tokens) ? SAIDA_OK : SAIDA_ERRO_SINTATICO;
     }
 
-    /** Executa o léxico e imprime tokens, resumo e erros. Retorna true se não houve erro. */
-    private boolean analisar(Path arquivo, String codigo) {
+    /** Executa o léxico e imprime tokens, resumo e erros. Retorna os tokens, ou null se houve erro. */
+        /** Executa o léxico e imprime tokens, resumo e erros. Retorna os tokens, ou null se houve erro. */
+    private List<Token> analisarLexico(Path arquivo, String codigo) {          // <- nome e retorno
         AnalisadorLexico lexico = new AnalisadorLexico(codigo);
         Map<TipoToken, Integer> contagem = new EnumMap<>(TipoToken.class);
 
@@ -93,12 +102,10 @@ public final class App {
         out.println("==============================================================");
         out.println(" LIN:COL   TOKEN");
 
-        // Mesmo laço do exemplo do professor: pede tokens até chegar no FIM
-        Token token = lexico.nextToken();
-        while (token.getTipoToken() != TipoToken.FIM) {
+        List<Token> tokens = lexico.analisarTudo();       // o último token é sempre o FIM   // <- novo
+        for (Token token : tokens.subList(0, tokens.size() - 1)) {                         // <- novo
             out.printf("%4d:%-4d  %s%n", token.getLinha(), token.getColuna(), token);
             contagem.merge(token.getTipoToken(), 1, Integer::sum);
-            token = lexico.nextToken();
         }
 
         int total = contagem.values().stream().mapToInt(Integer::intValue).sum();
@@ -111,14 +118,26 @@ public final class App {
 
         if (!lexico.temErros()) {
             out.println(" Análise léxica concluída sem erros.");
-            return true;
+            return tokens;                                                       // <- era true
         }
 
         out.println(" " + lexico.getErros().size() + " erro(s) léxico(s) encontrado(s):");
         for (ErroLexico erro : lexico.getErros()) {
             out.println("   " + erro);
         }
-        return false;
+        return null;                                                             // <- era false
+    }
+
+    /** Executa o sintático sobre os tokens. Retorna true se o programa segue a gramática. */
+    private boolean analisarSintatico(List<Token> tokens) {
+        try {
+            new AnalisadorSintatico(tokens).parsePrograma();
+            out.println(" Análise sintática concluída sem erros.");
+            return true;
+        } catch (ErroSintatico erro) {
+            out.println(" " + erro);
+            return false;
+        }
     }
 
     /** Pergunta o nome do arquivo até receber um válido (ou o usuário digitar "sair"). */

@@ -1,0 +1,7 @@
+programa ErroSintatico
+
+inicio
+	var x: int = 10
+	se x > 5 entao
+		escreve("x é maior que 5")
+fim

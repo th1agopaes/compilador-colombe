@@ -244,7 +244,6 @@ public class AnalisadorSintatico {
         }
     }
 
-
     // ---------- expressões (nível 8 = menor precedência ... nível 1 = maior) ----------
 
     /** expressao = expr_e , { ( "ou" | "xou" ) , expr_e } ;   (nível 8) */
@@ -256,7 +255,7 @@ public class AnalisadorSintatico {
         }
     }
 
-        /** expr_e = expr_igualdade , { "e" , expr_igualdade } ;   (nível 7) */
+    /** expr_e = expr_igualdade , { "e" , expr_igualdade } ;   (nível 7) */
     private void parseExprE() {
         parseExprIgualdade();
         while (verificar(TipoToken.PALAVRA_RESERVADA, "e")) {

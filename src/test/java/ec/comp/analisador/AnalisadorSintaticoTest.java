@@ -257,4 +257,34 @@ public class AnalisadorSintaticoTest {
         ErroSintatico e = erro(comExpressao("somar(1,)"));
         assertEquals("esperado uma expressão, encontrado ')'", e.getMessage());
     }
+
+    // ---------- comandos ----------
+
+    @Test
+    public void aceitaComandosSimples() {
+        analisar(comLocais(
+                "var x: int\n"
+                + "x = 1 + 2\n"
+                + "turma[0].notas[1] = 7.5\n"
+                + "x++\n"
+                + "--x\n"
+                + "somar(x, 2)\n"
+                + "exibir()\n"
+                + "leia(turma[i].nome)\n"
+                + "escreve(\"x = \", x)\n"
+                + "retorna x * 2\n"));
+    }
+
+    @Test
+    public void rejeitaIdentificadorSozinhoComoComando() {
+        ErroSintatico e = erro(comLocais("x\n"));
+        assertEquals("esperado '=', '++' ou '--', encontrado fim de linha", e.getMessage());
+        assertEquals(3, e.getLinha());
+    }
+
+    @Test
+    public void rejeitaComparacaoNoLugarDeAtribuicao() {
+        ErroSintatico e = erro(comLocais("x == 1\n"));
+        assertEquals("esperado '=', '++' ou '--', encontrado '=='", e.getMessage());
+    }
 }

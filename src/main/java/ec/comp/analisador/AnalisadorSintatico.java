@@ -24,6 +24,8 @@ import ec.comp.model.Token;
 public class AnalisadorSintatico {
 
     private static final String[] TIPOS_PRIMITIVOS = {"int", "real", "logico", "caractere", "cadeia"};
+    /** Palavras reservadas que podem começar um comanndo (parte do FIRST(comando)) */
+    private static final String[] PALAVRAS_DE_COMANDO = {"se", "enquanto", "repita", "para", "leia", "escreve", "retorna"};
     private final List<Token> tokens;
     private int pos = 0;
 
@@ -85,7 +87,7 @@ public class AnalisadorSintatico {
         while (verificar(TipoToken.PALAVRA_RESERVADA, "var")) {
             parseDeclaracaoVariavel();
         }
-        // TODO: { comando }
+        parseComandos();
     }
 
     // ---------- declarações de dados ----------
@@ -197,6 +199,94 @@ public class AnalisadorSintatico {
         } else {
             throw erro("um tamanho (inteiro ou constante)");
         }
+    }
+
+    // ---------- comandos ----------
+
+    /** { comando } -- repete enquanto o token atual puder COMEÇAR um comando */
+    private void parseComandos() {
+        while (podeIniciarComando()) {
+            parseComando();
+        }
+    }
+
+    /** FIRST(comando) = { identificador, "++", "--", se, enquanto, repita, para, leia, escreve, retorna } */
+    private boolean podeIniciarComando() {
+        return verificar(TipoToken.IDENTIFICADOR)
+                || verificar(TipoToken.OPERADOR, "++", "--")
+                || verificar(TipoToken.PALAVRA_RESERVADA, PALAVRAS_DE_COMANDO);
+    }
+
+    /**
+     * comando = ( comando_identificador | comando_incremento | comando_se
+     *         | comando_enquanto | comando_repita | comando_para
+     *         | comando_leia | comando_escreve | comando_retorna ) , NL ;
+     */
+    private void parseComando() {
+        if (verificar(TipoToken.IDENTIFICADOR)) {
+            parseComandoIdentificador();
+        } else if (verificar(TipoToken.OPERADOR, "++", "--")) {
+            parseComandoIncremento();
+        } else {
+            switch (tokenAtual().getToken()) {
+                case "leia" -> parseComandoLeia();
+                case "escreve" -> parseComandoEscreve();
+                case "retorna" -> parseComandoRetorna();
+                // TODO: se, enquanto, repita, para
+                default -> throw erro("um comando");
+            }
+        }
+        consumir(TipoToken.NL);     // todo comando termina na quebra de linha
+    }
+
+        /**
+     * comando_identificador = identificador ,
+     *       ( "(" , [ lista_argumentos ] , ")"
+     *       | { seletor } , ( "=" , expressao | "++" | "--" ) ) ;
+     */
+    private void parseComandoIdentificador() {
+        consumir(TipoToken.IDENTIFICADOR);
+        if (verificar(TipoToken.DELIMITADOR, "(")) {          // chamada: somar(a, b)
+            parseArgumentos();
+        } else {
+            parseSeletores();                                  // turma[i].nome
+            if (verificar(TipoToken.OPERADOR, "=")) {          // atribuição
+                avancar();
+                parseExpressao();
+            } else if (verificar(TipoToken.OPERADOR, "++", "--")) {   // i++ / i--
+                avancar();
+            } else {
+                throw erro("'=', '++' ou '--'");
+            }
+        }
+    }
+
+    /** comando_incremento = ( "++" | "--" ) , variavel ; */
+    private void parseComandoIncremento() {
+        avancar();                                 // "++" ou "--" (já verificado)
+        parseVariavel();
+    }
+
+    /** comando_leia = "leia" , "(" , variavel , ")" ; */
+    private void parseComandoLeia() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "leia");
+        consumir(TipoToken.DELIMITADOR, "(");
+        parseVariavel();
+        consumir(TipoToken.DELIMITADOR, ")");
+    }
+
+    /** comando_escreve = "escreve" , "(" , expressao , { "," , expressao } , ")" ; */
+    private void parseComandoEscreve() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "escreve");
+        consumir(TipoToken.DELIMITADOR, "(");
+        parseListaArgumentos();                    // mesma forma: expressao , { "," , expressao }
+        consumir(TipoToken.DELIMITADOR, ")");
+    }
+
+    /** comando_retorna = "retorna" , expressao ; */
+    private void parseComandoRetorna() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "retorna");
+        parseExpressao();
     }
 
     // ---------- variáveis e chamadas ----------

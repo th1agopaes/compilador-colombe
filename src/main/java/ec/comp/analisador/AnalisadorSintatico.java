@@ -199,18 +199,158 @@ public class AnalisadorSintatico {
         }
     }
 
-    // ---------- expressões ----------
+    // ---------- variáveis e chamadas ----------
+
+    /** variavel = identificador , { seletor } ; */
+    private void parseVariavel() {
+        consumir(TipoToken.IDENTIFICADOR);
+        parseSeletores();
+    }
+
+    /** { seletor }  -- repete enquanto vier "[" ou "." */
+    private void parseSeletores() {
+        while (verificar(TipoToken.DELIMITADOR, "[", ".")) {
+            parseSeletor();
+        }
+    }
+
+    /** seletor = "[" , expressao , "]" | "." , identificador ; */
+    private void parseSeletor() {
+        if (verificar(TipoToken.DELIMITADOR, "[")) {   // índice: v[i]
+            avancar();
+            parseExpressao();
+            consumir(TipoToken.DELIMITADOR, "]");
+        } else {                                        // campo: aluno.nome
+            consumir(TipoToken.DELIMITADOR, ".");
+            consumir(TipoToken.IDENTIFICADOR);
+        }
+    }
+
+    /** "(" , [ lista_argumentos ] , ")"  -- parte da chamada de módulo */
+    private void parseArgumentos() {
+        consumir(TipoToken.DELIMITADOR, "(");
+        if (!verificar(TipoToken.DELIMITADOR, ")")) {   // [ lista_argumentos ]
+            parseListaArgumentos();
+        }
+        consumir(TipoToken.DELIMITADOR, ")");
+    }
+
+    /** lista_argumentos = expressao , { "," , expressao } ; */
+    private void parseListaArgumentos() {
+        parseExpressao();
+        while (verificar(TipoToken.DELIMITADOR, ",")) {
+            avancar();
+            parseExpressao();
+        }
+    }
+
+
+    // ---------- expressões (nível 8 = menor precedência ... nível 1 = maior) ----------
+
+    /** expressao = expr_e , { ( "ou" | "xou" ) , expr_e } ;   (nível 8) */
+    private void parseExpressao() {
+        parseExprE();
+        while (verificar(TipoToken.PALAVRA_RESERVADA, "ou", "xou")) {
+            avancar();
+            parseExprE();
+        }
+    }
+
+        /** expr_e = expr_igualdade , { "e" , expr_igualdade } ;   (nível 7) */
+    private void parseExprE() {
+        parseExprIgualdade();
+        while (verificar(TipoToken.PALAVRA_RESERVADA, "e")) {
+            avancar();
+            parseExprIgualdade();
+        }
+    }
+
+    /** expr_igualdade = expr_relacional , [ ( "==" | "!=" ) , expr_relacional ] ;   (nível 6) */
+    private void parseExprIgualdade() {
+        parseExprRelacional();
+        if (verificar(TipoToken.OPERADOR, "==", "!=")) {      // [ ] -> if: não encadeia
+            avancar();
+            parseExprRelacional();
+        }
+    }
+
+    /** expr_relacional = expr_aditiva , [ ( "<" | ">" | "<=" | ">=" ) , expr_aditiva ] ;   (nível 5) */
+    private void parseExprRelacional() {
+        parseExprAditiva();
+        if (verificar(TipoToken.OPERADOR, "<", ">", "<=", ">=")) {
+            avancar();
+            parseExprAditiva();
+        }
+    }
+
+    /** expr_aditiva = expr_multiplicativa , { ( "+" | "-" ) , expr_multiplicativa } ;   (nível 4) */
+    private void parseExprAditiva() {
+        parseExprMultiplicativa();
+        while (verificar(TipoToken.OPERADOR, "+", "-")) {
+            avancar();
+            parseExprMultiplicativa();
+        }
+    }
+
+    /** expr_multiplicativa = expr_potencia , { ( "*" | "/" | "div" | "mod" ) , expr_potencia } ;   (nível 3) */
+    private void parseExprMultiplicativa() {
+        parseExprPotencia();
+        while (verificar(TipoToken.OPERADOR, "*", "/")
+                || verificar(TipoToken.PALAVRA_RESERVADA, "div", "mod")) {
+            avancar();
+            parseExprPotencia();
+        }
+    }
+
+    /** expr_potencia = expr_unaria , [ "^" , expr_potencia ] ;   (nível 2) */
+    private void parseExprPotencia() {
+        parseExprUnaria();
+        if (verificar(TipoToken.OPERADOR, "^")) {
+            avancar();
+            parseExprPotencia();          // chama a si mesma: 2^3^2 = 2^(3^2)
+        }
+    }
 
     /**
-     * PROVISÓRIA: aceita só um valor simples (literal ou identificador).
-     * TODO: trocar pela gramática completa de expressões (8 níveis de precedência).
+     * expr_unaria = ( "nao" | "-" ) , expr_unaria
+     *             | ( "++" | "--" ) , variavel
+     *             | primario ;   (nível 1)
      */
-    private void parseExpressao() {
-        if (verificar(TipoToken.LITERAL_INTEIRO) || verificar(TipoToken.LITERAL_REAL)
-                || verificar(TipoToken.LITERAL_CARACTERE) || verificar(TipoToken.LITERAL_CADEIA)
-                || verificar(TipoToken.PALAVRA_RESERVADA, "verdadeiro", "falso")
-                || verificar(TipoToken.IDENTIFICADOR)) {
+    private void parseExprUnaria() {
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "nao") || verificar(TipoToken.OPERADOR, "-")) {
             avancar();
+            parseExprUnaria();
+        } else if (verificar(TipoToken.OPERADOR, "++", "--")) {
+            avancar();
+            parseVariavel();
+        } else {
+            parsePrimario();
+        }
+    }
+
+    /**
+     * primario = literal
+     *          | "(" , expressao , ")"
+     *          | identificador , ( "(" , [ lista_argumentos ] , ")"
+     *                            | { seletor } , [ "++" | "--" ] ) ;
+     */
+    private void parsePrimario() {
+        if (verificarLiteral()) {
+            avancar();
+        } else if (verificar(TipoToken.DELIMITADOR, "(")) {
+            avancar();
+            parseExpressao();
+            consumir(TipoToken.DELIMITADOR, ")");
+        } else if (verificar(TipoToken.IDENTIFICADOR)) {
+            avancar();
+            if (verificar(TipoToken.DELIMITADOR, "(")) {     // chamada: somar(a, b)
+                parseArgumentos();
+            } else {                                         // variável: turma[i].nome
+                parseSeletores();
+                if (verificar(TipoToken.OPERADOR, "++", "--")) {   // [ "++" | "--" ]
+                    avancar();
+                }
+            }
         } else {
             throw erro("uma expressão");
         }
@@ -244,6 +384,13 @@ public class AnalisadorSintatico {
             }
         }
         return false;
+    }
+
+    /** literal = literal_inteiro | literal_real | literal_logico | literal_caractere | literal_cadeia ; */
+    private boolean verificarLiteral() {
+        return verificar(TipoToken.LITERAL_INTEIRO) || verificar(TipoToken.LITERAL_REAL)
+                || verificar(TipoToken.LITERAL_CARACTERE) || verificar(TipoToken.LITERAL_CADEIA)
+                || verificar(TipoToken.PALAVRA_RESERVADA, "verdadeiro", "falso");
     }
 
     /** Exige um token deste tipo: se for, avança e o devolve; se não, erro. */

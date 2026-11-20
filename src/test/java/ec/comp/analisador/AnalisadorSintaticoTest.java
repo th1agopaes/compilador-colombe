@@ -35,6 +35,22 @@ public class AnalisadorSintaticoTest {
         return "programa Teste\ninicio\n" + declaracoes + "fim\n";
     }
 
+    /** Monta um programa em que a expressão é o valor inicial de uma variável. */
+    private static String comExpressao(String expressao) {
+        return comGlobais("var x: int = " + expressao + "\n");
+    }
+
+    /** Garante que cada expressão é aceita; se alguma falhar, diz qual. */
+    private static void aceitaExpressoes(String... expressoes) {
+        for (String expressao : expressoes) {
+            try {
+                analisar(comExpressao(expressao));
+            } catch (ErroSintatico e) {
+                throw new AssertionError("rejeitou '" + expressao + "': " + e.getMessage(), e);
+            }
+        }
+    }
+
     // ---------- programa ----------
 
     @Test
@@ -163,5 +179,82 @@ public class AnalisadorSintaticoTest {
     public void rejeitaDuasDeclaracoesNaMesmaLinha() {
         ErroSintatico e = erro(comGlobais("var a: int var b: int\n"));
         assertEquals("esperado fim de linha, encontrado 'var'", e.getMessage());
+    }
+
+    // ---------- expressões ----------
+
+    @Test
+    public void aceitaAritmeticaComPrecedenciaEParenteses() {
+        aceitaExpressoes("1 + 2 * 3 - 4 / 2", "10 div 3 mod 2", "(1 + 2) * 3", "2 ^ 3 ^ 2");
+    }
+
+    @Test
+    public void aceitaMenosUnario() {
+        aceitaExpressoes("-5", "-x", "-(a + b)", "a - -b", "-2 ^ 2", "2 ^ -1");
+    }
+
+    @Test
+    public void aceitaLiteraisDeTodosOsTipos() {
+        aceitaExpressoes("42", "3.14", "verdadeiro", "'A'", "\"Colombe\"");
+    }
+
+    @Test
+    public void aceitaRelacionaisELogicos() {
+        aceitaExpressoes("a < b e b <= c", "a == b ou a != c", "a xou nao b", "nao (a == b)");
+    }
+
+    @Test
+    public void aceitaIncrementoPreEPosFixado() {
+        aceitaExpressoes("x++ + ++x - x-- - --x", "v[i + 1]++", "--turma[0].idade");
+    }
+
+    @Test
+    public void aceitaVariaveisComSeletores() {
+        aceitaExpressoes("aluno.nome", "tabuleiro[1][2]", "turma[i].notas[2] + 1");
+    }
+
+    @Test
+    public void aceitaChamadasDeModulo() {
+        aceitaExpressoes("lerNota()", "somar(1, 2) * 3", "maior(somar(a, b), v[1])");
+    }
+
+    @Test
+    public void rejeitaOperandoFaltando() {
+        ErroSintatico e = erro(comExpressao("1 +"));
+        assertEquals("esperado uma expressão, encontrado fim de linha", e.getMessage());
+        assertEquals(2, e.getLinha());
+        assertEquals(17, e.getColuna());
+    }
+
+    @Test
+    public void rejeitaParenteseSemFechar() {
+        ErroSintatico e = erro(comExpressao("(1 + 2"));
+        assertEquals("esperado ')', encontrado fim de linha", e.getMessage());
+    }
+
+    @Test
+    public void rejeitaRelacionaisEncadeados() {
+        ErroSintatico e = erro(comExpressao("a < b < c"));
+        assertEquals("esperado fim de linha, encontrado '<'", e.getMessage());
+        assertEquals(20, e.getColuna());
+    }
+
+    @Test
+    public void rejeitaMenosMenosColado() {
+        // maximal munch: a--b vira a, --, b (x-- e depois um b sobrando)
+        ErroSintatico e = erro(comExpressao("a--b"));
+        assertEquals("esperado fim de linha, encontrado 'b'", e.getMessage());
+    }
+
+    @Test
+    public void rejeitaIncrementoEmLiteral() {
+        assertEquals("esperado fim de linha, encontrado '++'", erro(comExpressao("5++")).getMessage());
+        assertEquals("esperado um identificador, encontrado '5'", erro(comExpressao("++5")).getMessage());
+    }
+
+    @Test
+    public void rejeitaArgumentoVazio() {
+        ErroSintatico e = erro(comExpressao("somar(1,)"));
+        assertEquals("esperado uma expressão, encontrado ')'", e.getMessage());
     }
 }

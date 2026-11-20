@@ -37,6 +37,13 @@ public class ExemplosTest {
     }
 
     @Test
+    public void programaExemploEstaSintaticamenteCorreto() throws IOException {
+        AnalisadorLexico lex = analisar("registro-alunos.cb");
+        List<Token> tokens = lex.analisarTudo();
+        new AnalisadorSintatico(tokens).parsePrograma();   // lança ErroSintatico se houver erro
+    }
+
+    @Test
     public void todosOsTokensUsaTodasAsCategoriasValidas() throws IOException {
         AnalisadorLexico lex = analisar("todos-os-tokens.cb");
         List<Token> tokens = lex.analisarTudo();

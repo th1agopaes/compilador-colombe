@@ -326,4 +326,60 @@ public class AnalisadorSintaticoTest {
         ErroSintatico e = erro(comLocais("x = 1\nvar y: int\n"));
         assertEquals("esperado 'fim', encontrado 'var'", e.getMessage());
     }
+
+        // ---------- módulos ----------
+
+    @Test
+    public void aceitaModulosComESemParametrosERetorno() {
+        analisar(comGlobais("""
+                modulo saudacao(): vazio
+                    escreve("Olá!")
+                fim
+                modulo somar(a: int, b: int): int
+                    retorna a + b
+                fim
+                modulo dobrar(ref x: int): vazio
+                    x = x * 2
+                fim
+                """));
+    }
+
+    @Test
+    public void aceitaParametrosERetornoEstruturados() {
+        analisar(comGlobais("""
+                registro Aluno
+                    nome: cadeia
+                fim
+                modulo media(notas: vetor[3] de real, ref turma: vetor[30] de Aluno): real
+                    var soma: real = 0.0
+                    retorna soma / 3
+                fim
+                modulo criarAluno(nome: cadeia): Aluno
+                    var a: Aluno
+                    a.nome = nome
+                    retorna a
+                fim
+                """));
+    }
+
+    @Test
+    public void rejeitaModuloSemTipoDeRetorno() {
+        ErroSintatico e = erro(comGlobais("modulo f()\nfim\n"));
+        assertEquals("esperado ':', encontrado fim de linha", e.getMessage());
+        assertEquals(2, e.getLinha());
+    }
+
+    @Test
+    public void rejeitaRefSemNomeDoParametro() {
+        ErroSintatico e = erro(comGlobais("modulo f(ref: int): vazio\nfim\n"));
+        assertEquals("esperado um identificador, encontrado ':'", e.getMessage());
+    }
+
+    @Test
+    public void rejeitaModuloSemFim() {
+        // sem o "fim", o próximo token depois dos comandos do módulo é o "inicio"
+        ErroSintatico e = erro(comGlobais("modulo f(): vazio\n  x = 1\n"));
+        assertEquals("esperado 'fim', encontrado 'inicio'", e.getMessage());
+        assertEquals(4, e.getLinha());
+    }
 }

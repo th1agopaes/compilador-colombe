@@ -65,20 +65,21 @@ public class AnalisadorSintatico {
      * Repete enquanto o token atual puder COMEÇAR uma declaração global.
      */
     private void parseDeclaracoesGlobais() {
-        // TODO: incluir "modulo" quando a regra declaracao_modulo existir
-        while (verificar(TipoToken.PALAVRA_RESERVADA, "const", "var", "registro")) {
+        while (verificar(TipoToken.PALAVRA_RESERVADA, "const", "var", "registro", "modulo")) {
             parseDeclaracaoGlobal();
         }
     }
 
-    /** declaracao_global = declaracao_constante | declaracao_variavel | declaracao_registro | ... ; */
+    /** declaracao_global = declaracao_constante | declaracao_variavel | declaracao_registro | declaracao_modulo ; */
     private void parseDeclaracaoGlobal() {
         if (verificar(TipoToken.PALAVRA_RESERVADA, "const")) {
             parseDeclaracaoConstante();
         } else if (verificar(TipoToken.PALAVRA_RESERVADA, "var")) {
             parseDeclaracaoVariavel();
-        } else {
+        } else if (verificar(TipoToken.PALAVRA_RESERVADA, "registro")) {
             parseDeclaracaoRegistro();
+        } else {
+            parseDeclaracaoModulo();   // o while já garantiu que é "modulo"
         }
     }
 
@@ -199,6 +200,56 @@ public class AnalisadorSintatico {
         } else {
             throw erro("um tamanho (inteiro ou constante)");
         }
+    }
+
+        /** tipo_retorno = tipo | "vazio" ; */
+    private void parseTipoRetorno() {
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "vazio")) {
+            avancar();
+        } else {
+            parseTipo();
+        }
+    }
+
+    // ---------- módulos ----------
+
+    /**
+     * declaracao_modulo = "modulo" , identificador , "(" , [ lista_parametros ] , ")" ,
+     *                     ":" , tipo_retorno , NL , bloco , "fim" , NL ;
+     */
+    private void parseDeclaracaoModulo() {
+        consumir(TipoToken.PALAVRA_RESERVADA, "modulo");
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.DELIMITADOR, "(");
+        if (!verificar(TipoToken.DELIMITADOR, ")")) {   // [ lista_parametros ]
+            parseListaParametros();
+        }
+        consumir(TipoToken.DELIMITADOR, ")");
+        consumir(TipoToken.DELIMITADOR, ":");
+        parseTipoRetorno();
+        consumir(TipoToken.NL);
+        parseBloco();                                   // o mesmo bloco do inicio...fim
+        consumir(TipoToken.PALAVRA_RESERVADA, "fim");
+        consumir(TipoToken.NL);
+    }
+
+    /** lista_parametros = parametro , { "," , parametro } ; */
+    private void parseListaParametros() {
+        parseParametro();
+        while (verificar(TipoToken.DELIMITADOR, ",")) {
+            avancar();
+            parseParametro();
+        }
+    }
+
+    /** parametro = [ "ref" ] , identificador , ":" , tipo ; */
+    private void parseParametro() {
+        if (verificar(TipoToken.PALAVRA_RESERVADA, "ref")) {   // [ "ref" ] -> por referência
+            avancar();
+        }
+        consumir(TipoToken.IDENTIFICADOR);
+        consumir(TipoToken.DELIMITADOR, ":");
+        parseTipo();
     }
 
     // ---------- comandos ----------
